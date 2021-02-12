@@ -125,6 +125,12 @@ BOT_TOKEN.
 
     # Do the request and check for HTTP errors.
     reply = requests.post(url, json=params, headers=headers)
+    
+    retries = 0
+    while reply.status_code == 502 and retries < 3:
+        reply = requests.post(url, json=params, headers=headers)
+        retries += 1
+    
     if reply.status_code != 200:
         raise HTTPError(reply)
 
