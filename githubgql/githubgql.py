@@ -103,7 +103,7 @@ class TokenError(Exception):
 #
 # The results of depagination are merged. Therefore, you receive one big output list.
 # Similarly, the `pageInfo` object is removed from the result.
-def graphql(query, cursors=None, prev_path=None, **kwargs):
+def graphql(query, accept="", cursors=None, prev_path=None, **kwargs):
     "Perform a GraphQL query."
     url = os.environ.get("GITHUB_GRAPHQL_URL", "https://api.github.com/graphql")
 
@@ -120,12 +120,13 @@ appropriately-scoped personal access token as a shared secret named
 BOT_TOKEN.
     """)
 
-    # Opt into preview API fields for PR merge status.
-    headers["Accept"] = "application/vnd.github.bane-preview+json, application/vnd.github.merge-info-preview+json"
+    # Set custom Accept headers, if specified as input.
+    headers["Accept"] = accept
 
     # Do the request and check for HTTP errors.
     reply = requests.post(url, json=params, headers=headers)
     
+    # Retry HTTP 502 errors.
     retries = 0
     while reply.status_code == 502 and retries < 3:
         reply = requests.post(url, json=params, headers=headers)
