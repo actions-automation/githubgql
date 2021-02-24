@@ -103,7 +103,7 @@ class TokenError(Exception):
 #
 # The results of depagination are merged. Therefore, you receive one big output list.
 # Similarly, the `pageInfo` object is removed from the result.
-def graphql(query, accept="", cursors=None, prev_path=None, **kwargs):
+def graphql(query, accept="", retries=8, cursors=None, prev_path=None, **kwargs):
     "Perform a GraphQL query."
     url = os.environ.get("GITHUB_GRAPHQL_URL", "https://api.github.com/graphql")
 
@@ -125,13 +125,13 @@ BOT_TOKEN.
 
     # Do the request and check for HTTP errors.
     reply = requests.post(url, json=params, headers=headers)
-    
-    # Retry HTTP 502 errors.
-    retries = 0
-    while reply.status_code == 502 and retries < 3:
+
+    # Retry HTTP 5xx errors.
+    attempted_retries = 0
+    while reply.status_code >= 500 and attempted_retries < retries:
         reply = requests.post(url, json=params, headers=headers)
         retries += 1
-    
+
     if reply.status_code != 200:
         raise HTTPError(reply)
 
