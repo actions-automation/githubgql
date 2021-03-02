@@ -77,7 +77,7 @@ def graphql(
         query,
         token=os.environ.get('BOT_TOKEN', None),
         accept="",
-        max_retries=5,
+        max_retries=8,
         cursors=None,
         prev_path=None,
         **kwargs
