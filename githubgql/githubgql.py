@@ -3,38 +3,8 @@
 import requests
 import json
 import os
+import time
 import types
-
-PROJECTS = {
-    'Conferences': 'MDc6UHJvamVjdDQ5OTI0MzM=',
-    'Planning': 'MDc6UHJvamVjdDQ5NjA4NDg=',
-    'Sprint': 'MDc6UHJvamVjdDQ4MjA5OTM='
-}
-
-COLUMNS = {
-    'Conferences': {
-        'Accepted': 'MDEzOlByb2plY3RDb2x1bW4xMDA1NzA1Ng==',
-        'Completed': 'MDEzOlByb2plY3RDb2x1bW4xMDA1NzA1OQ==',
-        'Considering': 'MDEzOlByb2plY3RDb2x1bW4xMDA1NzA0OQ==',
-        'Delivered': 'MDEzOlByb2plY3RDb2x1bW4xMDA1NzA1Nw==',
-        'Submitted': 'MDEzOlByb2plY3RDb2x1bW4xMDA1NzA1Mw=='
-    },
-    'Planning': {
-        'Accepted': 'MDEzOlByb2plY3RDb2x1bW4xMDAwMzg0OQ==',
-        'Assigned': 'MDEzOlByb2plY3RDb2x1bW4xMDAwODk1MQ==',
-        'Backlog': 'MDEzOlByb2plY3RDb2x1bW4xMDAwMzg0Nw==',
-        'Done': 'MDEzOlByb2plY3RDb2x1bW4xMDAwOTI3OA==',
-        'Nominated': 'MDEzOlByb2plY3RDb2x1bW4xMDAwMzg0OA==',
-        'Triage': 'MDEzOlByb2plY3RDb2x1bW4xMDAwMzg0MA=='
-    },
-    'Sprint': {
-        'Active': 'MDEzOlByb2plY3RDb2x1bW4xMDQxMTcwOA==',
-        'Assigned': 'MDEzOlByb2plY3RDb2x1bW45ODA1MjQ5',
-        'Done': 'MDEzOlByb2plY3RDb2x1bW45ODA0Mzc2',
-        'Reviewed': 'MDEzOlByb2plY3RDb2x1bW4xMDQxMTcyMg==',
-        'Reviewing': 'MDEzOlByb2plY3RDb2x1bW45ODA1MjY1'
-    }
-}
 
 class HTTPError(Exception):
     def __init__(self, reply):
@@ -103,14 +73,21 @@ class TokenError(Exception):
 #
 # The results of depagination are merged. Therefore, you receive one big output list.
 # Similarly, the `pageInfo` object is removed from the result.
-def graphql(query, accept="", retries=8, cursors=None, prev_path=None, **kwargs):
+def graphql(
+        query,
+        token=os.environ.get('BOT_TOKEN', None),
+        accept="",
+        max_retries=5,
+        cursors=None,
+        prev_path=None,
+        **kwargs
+    ):
     "Perform a GraphQL query."
     url = os.environ.get("GITHUB_GRAPHQL_URL", "https://api.github.com/graphql")
-
     params = { "query": query.strip(), "variables": json.dumps(kwargs) }
-    token = os.environ.get('BOT_TOKEN', None)
     headers = {}
 
+    # Set Github authentication token, if available. If not, fail gracefully.
     if token is not None and len(token) > 0:
         headers["Authorization"] = f"token {token}"
     else:
@@ -126,11 +103,18 @@ BOT_TOKEN.
     # Do the request and check for HTTP errors.
     reply = requests.post(url, json=params, headers=headers)
 
-    # Retry HTTP 5xx errors.
+    # Retry certain HTTP errors.
+    retry_codes = [403, 429, 500, 502, 503, 504]
     attempted_retries = 0
-    while reply.status_code >= 500 and attempted_retries < retries:
-        reply = requests.post(url, json=params, headers=headers)
-        retries += 1
+
+    # If a mutation is being attempted, don't retry.
+    if action.split("(")[0] != "mutation":
+        while reply.status_code in retry_codes and attempted_retries < max_retries:
+            backoff = 2 ** (attempted_retries - 1)
+            print(f"githubgql: Retrying {reply.status_code} call with backoff {backoff}")
+            time.sleep(backoff)
+            reply = requests.post(url, json=params, headers=headers)
+            retries += 1
 
     if reply.status_code != 200:
         raise HTTPError(reply)
