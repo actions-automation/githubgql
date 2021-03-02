@@ -114,7 +114,7 @@ BOT_TOKEN.
             print(f"githubgql: Retrying {reply.status_code} call with backoff {backoff}")
             time.sleep(backoff)
             reply = requests.post(url, json=params, headers=headers)
-            retries += 1
+            attempted_retries += 1
 
     if reply.status_code != 200:
         raise HTTPError(reply)
