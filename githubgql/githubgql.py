@@ -108,7 +108,7 @@ BOT_TOKEN.
     attempted_retries = 0
 
     # If a mutation is being attempted, don't retry.
-    if action.split("(")[0] != "mutation":
+    if query.split("(")[0] != "mutation":
         while reply.status_code in retry_codes and attempted_retries < max_retries:
             backoff = 2 ** (attempted_retries - 1)
             print(f"githubgql: Retrying {reply.status_code} call with backoff {backoff}")
