@@ -145,7 +145,7 @@ BOT_TOKEN.
         pi = obj.pop("pageInfo")
         if pi["hasNextPage"]:
             kwargs[cursor] = pi["endCursor"]
-            next = graphql(query, cursors={cursor:cursors[cursor]}, prev_path=prev_path, **kwargs)
+            next = graphql(query, token=token, accept=accept, max_retries=max_retries, cursors={cursor:cursors[cursor]}, prev_path=prev_path, **kwargs)
             for name in current_path:
                 next = next[name]
 
@@ -188,7 +188,7 @@ BOT_TOKEN.
                     continue
 
                 # If another call is required, make it.
-                next = graphql(query, cursors=cursors[cursor]['next'], prev_path=current_path_nodes, **kwargs)
+                next = graphql(query, token=token, accept=accept, max_retries=max_retries, cursors=cursors[cursor]['next'], prev_path=current_path_nodes, **kwargs)
 
                 # Weld the depaginated data together.
                 for next_cursor in cursors[cursor]['next']:
