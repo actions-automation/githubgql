@@ -59,7 +59,7 @@ class TokenError(Exception):
 #     }
 # }
 #
-# data = graphql(query, cursors=cursors, owner="enarx", name="enarx")
+# data = graphql(query, token=token, cursors=cursors, owner="org", name="repo")
 #
 # Your query:
 #   * MUST have a `$cursor:String` variable (it MUST NOT be required!)
@@ -68,14 +68,16 @@ class TokenError(Exception):
 #   * MUST have a `nodes` entity on the pagination object
 #   * SHOULD fetch as many objects as you can (i.e. `first: 100`)
 #
-# Additionally, you MUST have an appropriately-scoped PAT stored in the
-# `BOT_TOKEN` environment variable in order for requests to work.
+# Additionally, you MUST provide an appropriately-scoped Github access token
+# to `graphql()` under the `token` input. Depending on the application, the
+# default `GITHUB_TOKEN` may work; otherwise, a personal access token may be 
+# required.
 #
 # The results of depagination are merged. Therefore, you receive one big output list.
 # Similarly, the `pageInfo` object is removed from the result.
 def graphql(
         query,
-        token=os.environ.get('BOT_TOKEN', None),
+        token=None,
         accept="",
         max_retries=8,
         cursors=None,
@@ -92,9 +94,7 @@ def graphql(
         headers["Authorization"] = f"token {token}"
     else:
         raise TokenError(error="""
-BOT_TOKEN is unset. If you wish to opt in to bot automation, provide an
-appropriately-scoped personal access token as a shared secret named
-BOT_TOKEN.
+No Github access token provided.
     """)
 
     # Set custom Accept headers, if specified as input.

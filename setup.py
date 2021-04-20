@@ -5,10 +5,10 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setuptools.setup(
     name="githubgql", # Replace with your own username
-    version="0.0.7.4",
+    version="0.0.8.0",
     author="Mark Bestavros",
     author_email="markbest@bu.edu",
-    description="Python library for GraphQL API actions on Github",
+    description="Python library for GraphQL API interactions on Github Actions",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/actions-automation/githubgql",
